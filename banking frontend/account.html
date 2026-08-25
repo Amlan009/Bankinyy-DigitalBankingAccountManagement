@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account - Unified Banking System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Crucial: Enables toggling via <html class="dark">
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        // Base Palette (Shared)
+                        'bank-primary': '#6366f1', // Indigo-500
+                        'bank-primary-hover': '#4f46e5', // Indigo-600
+                        'bank-success': '#10b981', // Emerald-500
+                        'bank-danger': '#ef4444', // Red-500
+                        'bank-warning': '#f59e0b', // Amber-500
+                        'bank-info': '#06b6d4', // Cyan-500
+
+                        // Light Mode (Default)
+                        'bank-bg': '#f9fafb',        // gray-50 (Page Background)
+                        'bank-card': 'rgba(255, 255, 255, 0.8)', // white glass
+                        'bank-nav': 'rgba(255, 255, 255, 0.8)',
+                        'bank-modal': '#ffffff',
+                        'bank-text-main': '#111827', // gray-900 (Main Text)
+                        'bank-text-muted': '#6b7280',// gray-500 (Subtle Text)
+                        'bank-border': '#e5e7eb',    // gray-200 (Borders)
+                        'bank-input-bg': '#f9fafb',   // gray-50
+                        'bank-input-border': '#d1d5db',// gray-300
+                        'bank-input-text': '#111827', // gray-900
+
+                        // Dark Mode (via dark: prefix)
+                        'bank-bg-dark': '#0f172a',
+                        'bank-card-dark': 'rgba(15, 23, 42, 0.8)',
+                        'bank-nav-dark': 'rgba(15, 23, 42, 0.8)',
+                        'bank-modal-dark': 'rgba(30, 41, 59, 0.95)',
+                        'bank-text-main-dark': '#e2e8f0',   // slate-200
+                        'bank-text-muted-dark': '#94a3b8', // slate-400
+                        'bank-border-dark': '#374151',   // gray-700
+                        'bank-input-bg-dark': 'rgba(55, 65, 81, 0.5)', // gray-700/50
+                        'bank-input-border-dark': '#4b5563',// gray-600
+                        'bank-input-text-dark': '#e2e8f0', // slate-200
+                    }
+                }
+            }
+        }
+        
+        // --- CORRECTED: applyInitialTheme ---
+        function applyInitialTheme() {
+            const theme = localStorage.getItem('theme') || 'system';
+            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (theme === 'dark' || (theme === 'system' && systemPrefersDark)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        applyInitialTheme();
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+        /* --- Base HTML/Body Styles (Responsive) --- */
+        html {
+            scroll-behavior: smooth;
+            background-color: #f9fafb; /* bank-bg */
+        }
+        html.dark {
+            background-color: #0f172a; /* bank-bg-dark */
+        }
+        body {
+            background: linear-gradient(135deg, #f0f5ff 0%, #e6e9f0 100%);
+            background-attachment: fixed;
+            position: relative;
+        }
+        .dark body {
+            background: linear-gradient(135deg, #0a0e1a 0%, #1e1b4b 50%, #0f172a 100%);
+            background-attachment: fixed;
+        }
+        
+        /* Grid Overlay (dark mode only) */
+        body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(99, 102, 241, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(99, 102, 241, 0.05) 1px, transparent 1px); background-size: 50px 50px; pointer-events: none; z-index: 0; opacity: 0; transition: opacity 0.3s; }
+        .dark body::before { opacity: 1; }
+        
+        /* Orbs (dark mode only) */
+        .glow-orb { position: fixed; border-radius: 50%; filter: blur(100px); opacity: 0; pointer-events: none; animation: float 8s ease-in-out infinite; z-index: 0; transition: opacity 0.3s; }
+        .dark .glow-orb { opacity: 0.3; }
+        .orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, #6366f1, transparent); top: -250px; left: -250px; }
+        .orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, #10b981, transparent); bottom: -200px; right: -200px; animation-delay: -4s; }
+        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-30px) scale(1.1); } }
+        
+        /* Glass Card (responsive) */
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.8); /* bank-card */
+            backdrop-filter: blur(20px) saturate(180%); 
+            border: 1px solid rgba(229, 231, 235, 0.7); /* bank-border */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.01), 0 2px 4px -2px rgba(0, 0, 0, 0.01); /* Light shadow */
+        }
+        .dark .glass-card { 
+            background: rgba(15, 23, 42, 0.8); /* bank-card-dark */
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            box-shadow: none;
+        }
+
+        /* Nav Glass (responsive) */
+        .nav-glass { 
+            background: rgba(255, 255, 255, 0.8); /* bank-nav */
+            backdrop-filter: blur(20px) saturate(180%); 
+            border-bottom: 1px solid #e5e7eb; /* bank-border */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05); /* Light shadow */
+        }
+        .dark .nav-glass { 
+            background: rgba(15, 23, 42, 0.8); /* bank-nav-dark */
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1); 
+            box-shadow: none;
+        }
+
+        /* Gradient Text (responsive) */
+        .gradient-text { 
+            color: #1f2937; /* bank-text-main */
+        }
+        .dark .gradient-text { 
+            background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #06b6d4 100%); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            background-clip: text; 
+        }
+
+        /* Input Glow */
+        .input-glow:focus { box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3); }
+        
+        /* Tab styling (responsive) */
+        .nav-tab-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-bottom-width: 3px;
+            border-color: transparent;
+            border-radius: 0.75rem 0.75rem 0 0;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #6b7280; /* bank-text-muted */
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        .dark .nav-tab-btn {
+            color: #94a3b8; /* bank-dark-text-muted */
+        }
+        .nav-tab-btn:hover {
+            color: #111827; /* bank-text-main */
+            background: rgba(243, 244, 246, 0.5); /* gray-100/50 */
+        }
+        .dark .nav-tab-btn:hover {
+            color: #e2e8f0; /* bank-dark-text */
+            background: rgba(99, 102, 241, 0.1); /* indigo/10 */
+        }
+        .nav-tab-btn.active {
+            color: #6366f1; /* bank-primary */
+            border-bottom-color: #6366f1;
+            background: rgba(238, 242, 255, 0.5); /* indigo-50/50 */
+        }
+        .dark .nav-tab-btn.active {
+            color: #818cf8; /* indigo-400 */
+            border-bottom-color: #818cf8;
+            background: rgba(99, 102, 241, 0.15); /* indigo/15 */
+        }
+        
+        /* Modal styling (responsive) */
+        .modal-card { 
+            background: #ffffff; /* bank-modal */
+            border: 1px solid #e5e7eb; /* bank-border */
+        }
+        .dark .modal-card { 
+            background: rgba(30, 41, 59, 0.95); /* bank-modal-dark */
+            border: 1px solid rgba(148, 163, 184, 0.2); 
+        }
+
+        /* Fix for date input placeholder */
+        input[type="date"]:not(:valid) {
+            color: #6b7280; /* bank-text-muted */
+        }
+        .dark input[type="date"]:not(:valid) {
+            color: #94a3b8; /* bank-dark-text-muted */
+        }
+
+        /* --- ADDED DEBIT CARD STYLES --- */
+        .debit-card {
+            width: 100%;
+            max-width: 400px;
+            height: 250px;
+            border-radius: 1.5rem; /* rounded-3xl */
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); /* Light mode: indigo-600 to purple-600 */
+            padding: 1.5rem; /* p-6 */
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 1.5px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .dark .debit-card {
+            background: linear-gradient(135deg, #1e3a8a 0%, #4c1d95 100%); /* Dark mode: blue-900 to purple-900 */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        .debit-card-chip {
+            width: 50px;
+            height: 40px;
+            background: linear-gradient(135deg, #fde047, #facc15); /* yellow-300 to yellow-500 */
+            border-radius: 0.25rem; /* rounded */
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .debit-card-logo {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 700; /* font-bold */
+            font-family: 'Inter', sans-serif;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .debit-card-number {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 600; /* font-semibold */
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        .debit-card-details {
+            font-size: 0.875rem; /* text-sm */
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+        .debit-card-holder {
+            font-size: 1rem; /* text-base */
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        /* --- ADDED CARD FLIP STYLES --- */
+        .debit-card-container {
+            perspective: 1000px; /* Establishes the 3D context */
+            width: 100%;
+            max-width: 400px; /* Matches the max-width of the debit-card */
+            height: 250px; /* Matches the height of the debit-card */
+            cursor: pointer;
+        }
+
+        .debit-card-flipper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .debit-card-flipper.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .debit-card, .debit-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden; /* Crucial for the flip effect */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .debit-card-back {
+            transform: rotateY(180deg);
+            /* Styling for the back is applied via .debit-card and specific elements inside */
+        }
+        /* --- END OF DEBIT CARD STYLES --- */
+        /* ... (at the end of your existing <style> block) ... */
+
+        /* --- STYLES FOR DROPDOWN MENUS --- */
+/* Dropdown styling for light and dark modes */
+select {
+    background-color: #f9fafb;
+    color: #111827;
+    color-scheme: light;
+}
+
+.dark select {
+    background-color: rgba(55, 65, 81, 0.5);
+    color: #e2e8f0;
+    color-scheme: dark;
+}
+
+select option {
+    background-color: #ffffff;
+    color: #111827;
+}
+
+.dark select option {
+    background-color: #1e293b;
+    color: #e2e8f0;
+}
+
+    </style>
+</head>
+<body class="font-sans text-bank-text-main bg-bank-bg dark:text-bank-text-main-dark dark:bg-bank-bg-dark relative min-h-screen">
+
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+
+    <nav class="nav-glass fixed w-full z-20 top-0 start-0">
+        <div class="max-w-7xl flex items-center justify-between mx-auto p-4">
+            <div class="flex items-center space-x-4">
+                <a href="dashboard.html" title="Back to Portal" class="text-bank-text-muted dark:text-slate-400 hover:text-bank-text-main dark:hover:text-white transition-colors transform hover:scale-110">
+                    <i class="bi bi-arrow-left-circle-fill text-2xl"></i>
+                </a>
+                <span class="text-2xl font-bold gradient-text" id="bankNameDisplay">Account Details</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" type="button" class="p-3 rounded-xl glass-card hover:bg-gray-100 dark:hover:bg-indigo-600/20 transition-all duration-300 transform hover:scale-110 text-bank-text-muted dark:text-slate-300">
+                    <i id="theme-toggle-icon" class="bi text-xl"></i>
+                </button>
+                <button id="logoutButton" type="button" class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl font-semibold text-white transition-all duration-300 transform hover:scale-105 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50">
+                    <i class="bi bi-box-arrow-right mr-2"></i>Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="relative z-10 max-w-7xl mx-auto pt-28 px-4 sm:px-6 lg:px-8 pb-16">
+        <header class="mb-10">
+            <h1 class="text-4xl font-bold text-bank-text-main dark:text-white mb-2">
+                Welcome, <span id="username-display" class="gradient-text">User</span>! 
+            </h1>
+            <p class="text-lg text-bank-text-muted dark:text-slate-400">
+                Account Number: <strong id="userAccountNumber" class="text-bank-text-main dark:text-slate-300">Loading...</strong>
+            </p>
+        </header>
+
+        <div class="mb-8 border-b border-bank-border dark:border-slate-700/50">
+            <ul class="flex flex-wrap gap-2 -mb-px" id="main-tabs">
+                <li>
+                    <button class="nav-tab-btn active" id="overview-tab" type="button">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Overview</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-tab-btn" id="transactions-tab" type="button">
+                        <i class="bi bi-clock-history"></i>
+                        <span>Transactions</span>
+                    </button>
+                </li>
+                <li>
+                    <button class="nav-tab-btn" id="card-tab" type="button">
+                        <i class="bi bi-credit-card-fill"></i>
+                        <span>My Card</span>
+                    </button>
+                </li>
+                <li>
+    <button class="nav-tab-btn" id="loan-tab" type="button">
+        <i class="bi bi-cash-coin"></i> 
+        <span>Apply for Loan</span>
+    </button>
+</li>
+<li>
+    <button class="nav-tab-btn" id="activity-log-tab" type="button">
+        <i class="bi bi-list-check"></i> 
+        <span>Activity Log</span>
+    </button>
+</li>
+                <li>
+                    <button class="nav-tab-btn" id="profile-tab" type="button">
+                        <i class="bi bi-gear-fill"></i>
+                        <span>Portal Settings</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div>
+            <div id="overview-pane" class="nav-tab-content">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <div class="lg:col-span-2 glass-card rounded-3xl p-8 transform hover:scale-[1.02] transition-all duration-300">
+                        <h5 class="text-lg font-semibold text-bank-text-muted dark:text-slate-400 mb-3">Current Balance</h5>
+                 <div class="flex items-center gap-4">
+        <h1 id="accountBalanceDisplay" class="text-5xl font-extrabold text-bank-text-main dark:text-white">...</h1>
+        
+        <button id="toggleBalance" type="button" class="text-3xl text-bank-text-muted dark:text-slate-400 hover:text-bank-primary dark:hover:text-indigo-400 transition-colors">
+            <i id="balance-eye-icon" class="bi bi-eye-fill"></i>
+        </button>
+    </div>
+</div>
+                    <div class="glass-card rounded-3xl p-8 transform hover:scale-[1.02] transition-all duration-300">
+                        <h5 class="text-lg font-semibold text-bank-text-muted dark:text-slate-400 mb-6">Quick Actions</h5>
+                        <div class="flex flex-col gap-4">
+                            <button id="depositBtn" class="w-full text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-xl text-base px-6 py-4 font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg shadow-emerald-500/30"><i class="bi bi-arrow-down-circle mr-2"></i>Deposit</button>
+                            <button id="transferBtn" class="w-full text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 rounded-xl text-base px-6 py-4 font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg shadow-indigo-500/30"><i class="bi bi-arrow-left-right mr-2"></i>Transfer</button>
+                            <button id="payBillBtn" class="w-full text-white bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-700 hover:to-sky-700 rounded-xl text-base px-6 py-4 font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg shadow-cyan-500/30"><i class="bi bi-receipt mr-2"></i>Pay Bills</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-card rounded-3xl p-8 transform hover:scale-[1.02] transition-all duration-300">
+                    <h5 class="text-2xl font-bold text-bank-text-main dark:text-white mb-6">Transaction Summary</h5>
+                    <div class="max-w-lg mx-auto">
+                        <canvas id="transactionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div id="transactions-pane" class="nav-tab-content hidden">
+                <div class="glass-card rounded-3xl p-8 transform hover:scale-[1.02] transition-all duration-300">
+                    <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                        <h5 class="text-2xl font-bold text-bank-text-main dark:text-white">Recent Transactions</h5>
+                        <button id="download-csv-btn" class="w-full sm:w-auto text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 font-semibold rounded-xl text-sm px-6 py-3 transform hover:scale-105 transition-all duration-300 shadow-lg shadow-indigo-500/30">
+                            <i class="bi bi-download mr-2"></i>Download Statement
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto rounded-xl">
+                        <table class="w-full text-sm text-left text-bank-text-muted dark:text-slate-300">
+                            <thead class="text-xs text-bank-text-muted dark:text-slate-400 uppercase bg-bank-bg dark:bg-slate-900/50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-4">Date</th>
+                                    <th scope="col" class="px-6 py-4">Description</th>
+                                    <th scope="col" class="px-6 py-4">Type</th>
+                                    <th scope="col" class="px-6 py-4">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="card-pane" class="nav-tab-content hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                    
+                    <div class="glass-card rounded-3xl p-8 transform hover:scale-[1.02] transition-all duration-300 flex items-center justify-center">
+                        <div class="debit-card-container mx-auto">
+                            <div id="debitCardFlipper" class="debit-card-flipper">
+                                <div id="card-front" class="debit-card">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <div class="debit-card-chip"></div>
+                                        <div id="card-bank-name" class="debit-card-logo">Bank Name</div>
+                                    </div>
+                                    <div class="mb-6">
+                                        <p id="card-number" class="debit-card-number">XXXX XXXX XXXX XXXX</p>
+                                    </div>
+                                    <div class="flex justify-between items-end">
+                                        <div>
+                                            <p class="debit-card-details">Card Holder</p>
+                                            <p id="card-holder-name" class="debit-card-holder">Your Name</p>
+                                        </div>
+                                        <div>
+                                            <p class="debit-card-details">Expires</p>
+                                            <p id="card-expiry-date" class="font-semibold">MM/YY</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="card-back" class="debit-card debit-card-back">
+                                    <div class="h-10 w-full bg-black mt-8"></div>
+                                    <div class="p-4 flex flex-col items-end">
+                                        <p class="text-xs text-right mb-1 text-white opacity-70">CVV</p>
+                                        <div id="card-cvv-display" class="bg-white text-bank-text-main text-xl font-bold rounded-md px-3 py-1 w-20 text-center">
+                                            ***
+                                        </div>
+                                    </div>
+                                    <p class="text-xs p-4 text-center mt-auto opacity-70 text-white">For security, the CVV is not permanently stored here.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="lg:col-span-1 xl:col-span-2 space-y-6">
+                        <div class="glass-card rounded-3xl p-8 transform hover:scale-[1.02] transition-all duration-300">
+                            <h5 class="text-2xl font-bold text-bank-text-main dark:text-white mb-6">Card Settings & Controls</h5>
+                            
+                            <div class="space-y-4">
+                                <div id="card-status-loading" class="text-center text-bank-text-muted dark:text-bank-text-muted-dark">
+                                    <svg class="animate-spin h-8 w-8 text-bank-primary dark:text-indigo-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <p>Loading card status...</p>
+                                </div>
+
+                                <div id="card-controls" class="hidden space-y-4">
+                                    <div class="flex items-center justify-between p-4 bg-bank-input-bg dark:bg-bank-input-bg-dark rounded-xl border border-bank-border dark:border-bank-border-dark">
+                                        <div>
+                                            <p class="font-semibold text-bank-text-main dark:text-bank-text-main-dark">Master Card Status</p>
+                                            <p id="card-status-text" class="text-sm font-bold">ACTIVE</p>
+                                        </div>
+                                        <button id="card-toggle-btn" onclick="handleToggleCardStatus(event, 'master')"
+                                            class="px-6 py-3 font-semibold rounded-xl text-sm transform hover:scale-105 transition-all duration-300">
+                                            </button>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between p-4 bg-bank-input-bg dark:bg-bank-input-bg-dark rounded-xl border border-bank-border dark:border-bank-border-dark">
+                                        <p class="font-semibold text-bank-text-main dark:text-bank-text-main-dark">Online Transactions</p>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="online-toggle-input" class="sr-only peer" onclick="handleToggleCardStatus(event, 'online')">
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between p-4 bg-bank-input-bg dark:bg-bank-input-bg-dark rounded-xl border border-bank-border dark:border-bank-border-dark">
+                                        <p class="font-semibold text-bank-text-main dark:text-bank-text-main-dark">International Transactions</p>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" id="international-toggle-input" class="sr-only peer" onclick="handleToggleCardStatus(event, 'international')">
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="loan-pane" class="nav-tab-content hidden">
+            <div class="glass-card rounded-3xl p-8 transform hover:scale-[1.02] transition-all duration-300 max-w-2xl mx-auto">
+                <h5 class="text-2xl font-bold text-bank-text-main dark:text-white mb-6 text-center">Loan Application</h5>
+                <form id="loanApplicationForm" class="space-y-5">
+                    <div id="loanError" class="hidden p-4 text-sm text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 border border-red-500/30 rounded-xl"></div>
+                    
+                    <div>
+                        <label for="loanAmount" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Desired Loan Amount (₹)</label>
+                        <input type="number" id="loanAmount" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow transition-all duration-200" min="1000" step="100" placeholder="50000" required>
+                    </div>
+
+                    <div>
+                        <label for="loanPurpose" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Purpose of Loan</label>
+                        <select id="loanPurpose" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow" required>
+                            <option value="">Select Purpose</option>
+                            <option value="Home Renovation">Home Renovation</option>
+                            <option value="Education">Education</option>
+                            <option value="Vehicle Purchase">Vehicle Purchase</option>
+                            <option value="Debt Consolidation">Debt Consolidation</option>
+                            <option value="Medical Expenses">Medical Expenses</option>
+                            <option value="Business Investment">Business Investment</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="monthlyIncome" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Approximate Monthly Income (₹)</label>
+                        <input type="number" id="monthlyIncome" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow" min="0" step="1000" placeholder="75000" required>
+                    </div>
+
+                    <button id="submitLoanApplication" type="submit" class="w-full text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 font-semibold rounded-xl text-sm px-6 py-4 transform hover:scale-105 transition-all duration-300 shadow-lg shadow-emerald-500/30">
+                        <i class="bi bi-send-check mr-2"></i>Submit Application
+                    </button>
+                    <p class="text-xs text-bank-text-muted dark:text-slate-500 text-center">Note: Submission does not guarantee approval. Further verification may be required.</p>
+                </form>
+                <div id="loanConfirmationDetails" 
+                     class="hidden mt-6 p-4 text-sm text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border border-green-500/30 rounded-xl">
+                    </div>
+            </div>
+        </div>
+        <div id="activity-log-pane" class="nav-tab-content hidden">
+        <div class="glass-card rounded-3xl p-8">
+            <h5 class="text-2xl font-bold text-bank-text-main dark:text-white mb-6">Recent Account Activity</h5>
+
+            <!-- Placeholder for where logs will be displayed -->
+            <div id="activityLogList" class="space-y-4">
+                <p class="text-bank-text-muted dark:text-slate-400 text-center py-6">
+                    Loading activity log...
+                </p>
+                <!-- Log entries will be added here by JavaScript -->
+
+                <!-- Example Log Entry Structure (for later use)
+                <div class="p-4 bg-bank-input-bg dark:bg-bank-input-bg-dark rounded-xl border border-bank-border dark:border-bank-border-dark flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold text-bank-text-main dark:text-bank-text-main-dark">Password Changed</p>
+                        <p class="text-xs text-bank-text-muted dark:text-slate-400">Security Update</p>
+                    </div>
+                    <p class="text-xs text-bank-text-muted dark:text-slate-500">Oct 25, 2025, 6:00 PM</p>
+                </div> 
+                -->
+            </div>
+        </div>
+    </div>
+
+            <div id="profile-pane" class="nav-tab-content hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="glass-card rounded-3xl p-8 transform hover:scale-[1.02] transition-all duration-300">
+                        <h5 class="text-2xl font-bold text-bank-text-main dark:text-white mb-6">Update Profile Details</h5>
+                        <form id="updateProfileForm" class="space-y-5">
+                            <div id="profileUpdateError" class="hidden p-4 text-sm text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 border border-red-500/30 rounded-xl"></div>
+                            <div>
+                                <label for="profileFullName" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Full Name</label>
+                                <input type="text" id="profileFullName" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow transition-all duration-200" required>
+                            </div>
+                            <div>
+                                <label for="profileEmail" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Email Address</label>
+                                <input type="email" id="profileEmail" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow transition-all duration-200" required>
+                            </div>
+                            <div>
+                                <label for="profilePhone" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Phone Number</label>
+                                <div class="flex mt-2">
+                                    <span class="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-bank-input-border dark:border-bank-input-border-dark bg-gray-200 dark:bg-slate-800 text-bank-text-muted dark:text-bank-text-muted-dark text-sm">+91</span>
+                                    <input type="tel" id="profilePhone" inputmode="numeric" placeholder="9876543210" maxlength="10" pattern="\d{10}" title="Please enter exactly 10 digits." class="w-full px-4 py-3 rounded-r-xl bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow transition-all duration-200">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="profileDob" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Date of Birth</label>
+                                <input type="date" id="profileDob" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow transition-all duration-200">
+                            </div>
+                            <div>
+                                <label for="profileAddress" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Address</label>
+                                <textarea id="profileAddress" rows="3" placeholder="123 Main St, Anytown" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow transition-all duration-200"></textarea>
+                            </div>
+                            <div>
+                                <label for="profileNominee" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Nominee Name</label>
+                                <input type="text" id="profileNominee" placeholder="e.g., Jane Doe" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow transition-all duration-200">
+                            </div>
+                            <button id="submitProfileUpdate" type="submit" class="w-full text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 font-semibold rounded-xl text-sm px-6 py-4 transform hover:scale-105 transition-all duration-300 shadow-lg shadow-indigo-500/30">
+                                <i class="bi bi-check-circle mr-2"></i>Save Changes
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="glass-card rounded-3xl p-8 transform hover:scale-[1.02] transition-all duration-300">
+                            <h5 class="text-2xl font-bold text-bank-text-main dark:text-white mb-6">Change Password</h5>
+                            <form id="changePasswordForm" class="space-y-5">
+                                <div id="passwordChangeError" class="hidden p-4 text-sm text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 border border-red-500/30 rounded-xl"></div>
+                                <div>
+                                    <label for="currentPassword" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Current Password</label>
+                                    <input type="password" id="currentPassword" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow transition-all duration-200" required>
+                                </div>
+                                <div>
+                                    <label for="newPassword" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">New Password</label>
+                                    <input type="password" id="newPassword" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow transition-all duration-200" required minlength="6">
+                                </div>
+                                <button id="submitPasswordChange" type="submit" class="w-full text-white bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 font-semibold rounded-xl text-sm px-6 py-4 transform hover:scale-105 transition-all duration-300 shadow-lg shadow-orange-500/30">
+                                    <i class="bi bi-key-fill mr-2"></i>Change Password
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="glass-card rounded-3xl p-8 transform hover:scale-[1.02] transition-all duration-300">
+                            <h5 class="text-2xl font-bold text-bank-text-main dark:text-white mb-6">Security PIN</h5>
+                            <form id="setPinForm" class="space-y-5">
+                                <div id="setPinError" class="hidden p-4 text-sm text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 border border-red-500/30 rounded-xl"></div>
+                                <p class="text-sm text-bank-text-muted dark:text-slate-400">
+                                    Set or update your 4-digit PIN for secure transactions. Enter your password to confirm.
+                                </p>
+                                <div>
+                                    <label for="pinCurrentPassword" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Current Password</label>
+                                    <input type="password" id="pinCurrentPassword" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow transition-all duration-200" required>
+                                </div>
+                                <div>
+                                    <label for="newPin" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">New 4-Digit PIN</label>
+                                    <input type="password" id="newPin" placeholder="••••" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow transition-all duration-200" required maxlength="4" pattern="\d{4}" title="PIN must be 4 digits." inputmode="numeric">
+                                </div>
+                                <button id="submitSetPin" type="submit" class="w-full text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 font-semibold rounded-xl text-sm px-6 py-4 transform hover:scale-105 transition-all duration-300 shadow-lg shadow-emerald-500/30">
+                                    <i class="bi bi-shield-lock mr-2"></i>Set/Update PIN
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalBackdrop" class="fixed inset-0 bg-gray-900/80 dark:bg-black/80 backdrop-blur-sm z-40 hidden"></div>
+
+    <div id="depositModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-card rounded-3xl shadow-2xl w-full max-w-md">
+            <form id="depositForm">
+                <div class="flex items-center justify-between p-6 border-b border-bank-border dark:border-slate-700">
+                    <h3 class="text-2xl font-bold text-bank-text-main dark:text-white">Make a Deposit</h3>
+                    <button type="button" class="modal-close-btn text-bank-text-muted dark:text-slate-400 hover:text-bank-text-main dark:hover:text-white text-3xl leading-none transition-colors">&times;</button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div id="depositError" class="hidden p-4 text-sm text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 border border-red-500/30 rounded-xl"></div>
+                    <p class="text-bank-text-muted dark:text-slate-300">Enter the amount you wish to deposit.</p>
+                    <div>
+                        <label for="depositSource" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Source</label>
+                        <select id="depositSource" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow" required>
+                            <option value="">Select a source</option>
+                            <option value="Cash Deposit">Cash Deposit</option>
+                            <option value="Check Deposit">Check Deposit</option>
+                            <option value="External Transfer">External Transfer</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="depositAmount" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Amount (₹)</label>
+                        <input type="number" id="depositAmount" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow" min="0.01" step="0.01" placeholder="1000.00" required>
+                    </div>
+                </div>
+                <div class="flex items-center justify-end p-6 space-x-3 border-t border-bank-border dark:border-slate-700">
+                    <button type="button" class="modal-close-btn px-6 py-3 text-bank-text-muted dark:text-slate-300 bg-transparent hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl text-sm transition-colors">Close</button>
+                    <button id="submitDeposit" type="submit" class="px-6 py-3 text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 font-semibold rounded-xl text-sm transform hover:scale-105 shadow-lg shadow-emerald-500/30">Deposit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="transferModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-card rounded-3xl shadow-2xl w-full max-w-md">
+            <form id="transferForm">
+                <div class="flex items-center justify-between p-6 border-b border-bank-border dark:border-slate-700">
+                    <h3 class="text-2xl font-bold text-bank-text-main dark:text-white">Make a Transfer</h3>
+                    <button type="button" class="modal-close-btn text-bank-text-muted dark:text-slate-400 hover:text-bank-text-main dark:hover:text-white text-3xl leading-none transition-colors">&times;</button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div id="transferError" class="hidden p-4 text-sm text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 border border-red-500/30 rounded-xl"></div>
+                    <div>
+                        <label for="transferAccountNumber" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Recipient's Account Number</label>
+                        <div class="flex mt-2">
+                            <input type="text" id="transferAccountNumber" class="rounded-l-xl w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark text-bank-input-text dark:text-bank-input-text-dark focus:outline-none focus:border-indigo-500 input-glow" required>
+                            <button type="button" id="verifyRecipientBtn" class="px-6 py-3 text-sm font-medium text-white bg-slate-600 dark:bg-slate-700 rounded-r-xl border border-slate-600 dark:border-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors">Verify</button>
+                        </div>
+                    </div>
+                    <div id="recipientVerifiedInfo" class="hidden p-3 text-sm text-green-700 bg-green-100 dark:text-green-300 dark:bg-green-900/30 border border-green-500/30 rounded-xl">Recipient: <strong id="verifiedRecipientName"></strong></div>
+                    <fieldset id="transferDetails" disabled class="space-y-4 pt-4 border-t border-bank-border dark:border-slate-700">
+                        <div>
+                            <label for="transferAmount" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Amount (₹)</label>
+                            <input type="number" id="transferAmount" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow" min="0.01" step="0.01" required>
+                        </div>
+                        <p class="text-sm text-bank-text-muted dark:text-slate-400 pt-2">For security, confirm your 4-digit PIN.</p>
+                        <div>
+                            <label for="transferPin" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Your 4-Digit PIN</label>
+                            <input type="password" id="transferPin" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow" required maxlength="4" pattern="\d{4}" title="PIN must be 4 digits." inputmode="numeric">
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="flex items-center justify-end p-6 space-x-3 border-t border-bank-border dark:border-slate-700">
+                    <button type="button" class="modal-close-btn px-6 py-3 text-bank-text-muted dark:text-slate-300 bg-transparent hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl text-sm transition-colors">Close</button>
+                    <button id="submitTransfer" type="submit" class="px-6 py-3 text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 font-semibold rounded-xl text-sm transform hover:scale-105 shadow-lg shadow-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed" disabled>Send Transfer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="payBillModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-card rounded-3xl shadow-2xl w-full max-w-md">
+            <form id="payBillForm">
+                <div class="flex items-center justify-between p-6 border-b border-bank-border dark:border-slate-700">
+                    <h3 class="text-2xl font-bold text-bank-text-main dark:text-white">Pay a Bill</h3>
+                    <button type="button" class="modal-close-btn text-bank-text-muted dark:text-slate-400 hover:text-bank-text-main dark:hover:text-white text-3xl leading-none transition-colors">&times;</button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div id="payBillError" class="hidden p-4 text-sm text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 border border-red-500/30 rounded-xl"></div>
+                    <div>
+                        <label for="payBillBiller" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Biller Name</label>
+                        <input type="text" id="payBillBiller" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow" placeholder="e.g., Power Company" required>
+                    </div>
+                    <div>
+                        <label for="payBillAmount" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Amount (₹)</label>
+                        <input type="number" id="payBillAmount" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow" min="0.01" step="0.01" required>
+                    </div>
+                    <hr class="border-bank-border dark:border-slate-700">
+                    <p class="text-sm text-bank-text-muted dark:text-slate-400 pt-2">For security, confirm your 4-digit PIN.</p>
+                    <div>
+                        <label for="payBillPin" class="block text-sm font-medium text-bank-text-muted dark:text-slate-400 mb-2">Your 4-Digit PIN</label>
+                        <input type="password" id="payBillPin" class="w-full px-4 py-3 bg-bank-input-bg dark:bg-bank-input-bg-dark border border-bank-input-border dark:border-bank-input-border-dark rounded-xl text-bank-input-text dark:text-bank-input-text-dark placeholder-bank-text-muted dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 input-glow" required maxlength="4" pattern="\d{4}" title="PIN must be 4 digits." inputmode="numeric">
+                    </div>
+                </div>
+                <div class="flex items-center justify-end p-6 space-x-3 border-t border-bank-border dark:border-slate-700">
+                    <button type="button" class="modal-close-btn px-6 py-3 text-bank-text-muted dark:text-slate-300 bg-transparent hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl text-sm transition-colors">Close</button>
+                    <button id="submitPayBill" type="submit" class="px-6 py-3 text-white bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-700 hover:to-sky-700 font-semibold rounded-xl text-sm transform hover:scale-105 shadow-lg shadow-cyan-500/30">Pay Bill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed top-24 right-5 z-50 space-y-3 max-w-md"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
